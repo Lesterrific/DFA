@@ -10,15 +10,31 @@ namespace CMSC141_MP2 {
     class Program {
         static void Main(string[] args) {
             Puzzle Pz = new Puzzle();
-            Pz.PrintState();
-            Console.WriteLine(Pz.TrySolve("RNLNCN"));
+            string[] PossibleSolutions = File.ReadAllLines(Path.Combine(Directory.GetCurrentDirectory(), "mp2.in"));
+            List<string> Results = new List<string>();
+            int i = 1;
+            foreach(var Solution in PossibleSolutions) {
+                Console.WriteLine(i);
+                if (Pz.TrySolve(Solution) == true) {
+                    Results.Add("OK");
+                }
+                else {
+                    Results.Add("NG");
+                }
+                i++;
+            }
+            File.AppendAllLines(Path.Combine(Directory.GetCurrentDirectory(), "mp2.out"), Results);
         }
     }
 
     class Puzzle {
 
         List<char> EastBank;
-        string InvalidStates = "RC,LR,LRC,MC,ML";
+        /*
+        a comma-separated collection of all possible invalid states for the East Bank. 
+        The invalid state of the opposite bank is inferred
+        */
+        string InvalidStates = "RC,CR,LR,RL,LRC,CRL,RCL,LCR,RLC,CLR,MC,CM,ML,M,LM";
 
         public Puzzle() {
             EastBank = new List<char>();
@@ -44,6 +60,8 @@ namespace CMSC141_MP2 {
         }
 
         public bool TrySolve(string Solution) {
+            Reset();
+            //PrintState();
             char[] Steps = Solution.ToCharArray();
             foreach (var Step in Steps) {
                 if(Step == 'N') {
@@ -101,35 +119,46 @@ namespace CMSC141_MP2 {
                     /* invalid character */
                     return false;
                 }
-
-                PrintState();
+                
+                //PrintState();
+                if(IsValidState() == false) {
+                    return false;
+                }
+            }
+            
+            if(EastBank.LongCount() != 4) {
+                //means not all of the animals + man was able to cross
+                return false;
             }
             return IsValidState();
         }
 
         public bool IsValidState() {
-
-            if(!(EastBank.Contains('L') && EastBank.Contains('C') && EastBank.Contains('R') && EastBank.Contains('M'))) {
-                return false;
-            }
-
             string[] IStates = InvalidStates.Split(',');
-            bool IsValid = true;
-            foreach (var State in IStates) {
-                char[] Eq = State.ToCharArray();
-                List<char> ToCompare = new List<char>();
-                foreach (char c in Eq) {
-                    ToCompare.Add(c);
-                }
-                /* checks if the EastBank State is the same as at least on of the Specified invalid states */
-                IsValid = !(EastBank.All(ToCompare.Contains) && ToCompare.Count == EastBank.Count);
-                if(IsValid == true) {
-                    break;
+            foreach(var s in IStates) {
+                if(ArraysEqual(s.ToCharArray(), EastBank.ToArray())) {
+                    return false;
                 }
             }
+            return true;
+        }
 
-            /* return true if the EastBank state is one of the specified invalid states, false otherwise. */
-            return IsValid;
+        //checks if two arrays are equal
+        bool ArraysEqual<T>(T[] a1, T[] a2) {
+            if (ReferenceEquals(a1, a2))
+                return true;
+
+            if (a1 == null || a2 == null)
+                return false;
+
+            if (a1.Length != a2.Length)
+                return false;
+
+            EqualityComparer<T> comparer = EqualityComparer<T>.Default;
+            for (int i = 0; i < a1.Length; i++) {
+                if (!comparer.Equals(a1[i], a2[i])) return false;
+            }
+            return true;
         }
     }
 }
